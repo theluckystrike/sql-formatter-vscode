@@ -1,0 +1,13 @@
+.git/**
+.github/**
+test/**
+scripts/**
+dist/**
+node_modules/**
+images/raw/**
+samples/**
+!samples/walkthrough.sql
+**/*.map
+.gitignore
+CHANGELOG.md.bak
+icon.svg

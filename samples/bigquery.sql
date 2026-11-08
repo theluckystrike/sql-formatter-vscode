@@ -1,0 +1,3 @@
+-- BigQuery: backtick paths, STRUCT and ARRAY, raw strings
+with events as (select user_id, event_name, timestamp_micros(event_timestamp) as ts, (select value.string_value from unnest(event_params) where key = 'page_location') as page from `my-project.analytics_123456.events_*` where _table_suffix between format_date('%Y%m%d', date_sub(current_date(), interval 7 day)) and format_date('%Y%m%d', current_date()))
+select user_id, array_agg(struct(event_name, ts) order by ts limit 5) as first_events, regexp_extract(any_value(page), r'https?://([^/]+)/') as host, safe_cast(count(*) as int64) n from events group by user_id qualify row_number() over (partition by user_id order by n desc) = 1;

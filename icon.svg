@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="44" fill="#16202E"/>
+  <text x="34" y="72" font-family="Menlo, DejaVu Sans Mono, monospace" font-size="40" font-weight="700" fill="#F2CC60">SQL</text>
+  <rect x="34" y="96" width="78" height="14" rx="7" fill="#F2CC60"/>
+  <rect x="62" y="122" width="104" height="14" rx="7" fill="#58A6FF"/>
+  <rect x="62" y="148" width="74" height="14" rx="7" fill="#58A6FF"/>
+  <rect x="34" y="174" width="60" height="14" rx="7" fill="#F2CC60"/>
+  <rect x="62" y="200" width="88" height="14" rx="7" fill="#58A6FF"/>
+  <path d="M186 118 L222 132 V164 C222 190 206 206 186 214 C166 206 150 190 150 164 V132 Z" fill="#12361F" stroke="#3FB950" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M170 164 L182 177 L204 152" fill="none" stroke="#3FB950" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
