@@ -24,7 +24,7 @@ function rulesFor(dialect) {
     prefixes: ['N', 'E', 'B', 'X', 'U&', 'R', 'RB', 'BR', 'G', 'GX', 'BX', 'UX'],
     identQuote: '"', // quote for placeholder names
   };
-  if (MYSQL_LIKE.has(d)) Object.assign(r, { sqBackslash: true, dqString: true, dqBackslash: true, backtick: true, hashComment: true, identQuote: '`' });
+  if (MYSQL_LIKE.has(d)) Object.assign(r, { dollar: false, sqBackslash: true, dqString: true, dqBackslash: true, backtick: true, hashComment: true, identQuote: '`' });
   if (d === 'bigquery') Object.assign(r, { sqBackslash: true, dqString: true, dqBackslash: true, backtick: true, hashComment: true, tripleQuotes: true, identQuote: '`' });
   if (d === 'hive' || d === 'spark') Object.assign(r, { sqBackslash: true, dqString: true, dqBackslash: true, backtick: true, identQuote: '`' });
   if (d === 'n1ql') Object.assign(r, { sqBackslash: true, dqString: true, dqBackslash: true, backtick: true, hashComment: true, identQuote: '`' });
@@ -96,7 +96,7 @@ function joinAccounts(text, toks) {
 function tokenAt(text, i0, rules, opts = {}) {
   const r = rules || rulesFor('sql');
   const n = text.length;
-  const dollarOn = opts.dollar !== false;
+  const dollarOn = opts.dollar !== false && r.dollar !== false;
   let i = i0;
   let tok = null;
   const push = (t, s, e, extra) => { tok = extra ? Object.assign({ t, s, e }, extra) : { t, s, e }; };

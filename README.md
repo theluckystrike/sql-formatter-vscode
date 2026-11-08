@@ -8,7 +8,7 @@ Format SQL in VS Code without breaking it. Free, no sign-in, works offline.
 - Keeps what other formatters break: `$$` and `$BODY$` bodies, `DELIMITER $$` blocks, `N'...'` strings, `[names with spaces]`, `` `root`@`localhost` ``, `=>`, commented-out code, `GO` and `/` lines, psql `\` commands and `COPY ... FROM stdin` rows.
 - 20 dialects, picked for you from the language mode, the file name or the text: PostgreSQL, MySQL, MariaDB, T-SQL, Oracle PL/SQL, SQLite, BigQuery, Snowflake, Redshift, Spark, Hive, Db2, DuckDB, Trino, ClickHouse and more.
 - Stored procedures indented by block, with BEGIN/END, IF/ELSE, loops, DECLARE, EXCEPTION and package bodies.
-- Large files work. A 5 MB script formats in about 3 seconds on 4 threads, with a Cancel button. VS Code stays responsive, because formatting runs outside the editor's process.
+- Large files work. A 5 MB script took 3.5 to 6 seconds in real VS Code tests (4 threads), with a Cancel button. VS Code stays responsive, because formatting runs outside the editor's process.
 
 ## Use it
 
@@ -40,7 +40,7 @@ Format the Rest formats every statement it can read and keeps the others exactly
 
 ## Stored procedures
 
-![A T-SQL stored procedure with BEGIN TRY and BEGIN CATCH blocks, indented by block, in the light theme.](images/procedure.png)
+![A T-SQL stored procedure with BEGIN TRY and BEGIN CATCH blocks, indented by block.](images/procedure.png)
 
 Plain statements inside a procedure are formatted as usual. Control lines go on their own lines and the body is indented by block. MySQL `DELIMITER` sections, T-SQL `GO` batches and Oracle `/` lines are kept.
 

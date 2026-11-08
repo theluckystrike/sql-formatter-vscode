@@ -76,22 +76,29 @@ function threads() {
 function timeLimitMs() { return Math.max(2, Math.min(600, Number(cfg().get('timeLimitSeconds', 30)) || 30)) * 1000; }
 function maxChars() { return Math.max(1, Math.min(200, Number(cfg().get('maxFileSizeMB', 16)) || 16)) * 1024 * 1024; }
 
-/** The smallest single edit that turns a into b: common first and last lines are left alone. */
-function minimalEdit(doc, a, b) {
-  if (a === b) return [];
+/** The smallest single edit that turns a into b: { start, end, text } in offsets of a (whole lines). */
+function minimalSpan(a, b) {
+  if (a === b) return null;
   let s = 0;
   const n = Math.min(a.length, b.length);
   while (s < n && a.charCodeAt(s) === b.charCodeAt(s)) s++;
   let ea = a.length; let eb = b.length;
   while (ea > s && eb > s && a.charCodeAt(ea - 1) === b.charCodeAt(eb - 1)) { ea--; eb--; }
   // whole lines, so the edit never splits a CRLF pair
-  const ls = a.lastIndexOf('\n', s - 1) + 1;
-  const sB = ls;
+  const ls = s === 0 ? 0 : a.lastIndexOf('\n', s - 1) + 1;
   const leA = a.indexOf('\n', ea); const leB = b.indexOf('\n', eb);
   const endA = leA < 0 ? a.length : leA;
   const endB = leB < 0 ? b.length : leB;
-  if (a.length - endA !== b.length - endB) return [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(0), doc.positionAt(a.length)), b)];
-  return [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(ls), doc.positionAt(endA)), b.slice(sB, endB))];
+  const span = { start: ls, end: endA, text: b.slice(ls, endB) };
+  // check: the edit must give exactly b, else replace everything
+  if (a.length - endA !== b.length - endB || a.slice(0, span.start) + span.text + a.slice(span.end) !== b) return { start: 0, end: a.length, text: b };
+  return span;
+}
+
+function minimalEdit(doc, a, b) {
+  const sp = minimalSpan(a, b);
+  if (!sp) return [];
+  return [vscode.TextEdit.replace(new vscode.Range(doc.positionAt(sp.start), doc.positionAt(sp.end)), sp.text)];
 }
 
 /** Runs a job with a progress notification (Cancel button) for large texts. */
@@ -356,4 +363,4 @@ function activate(ctx) {
 
 function deactivate() { if (runner) runner.dispose(); }
 
-module.exports = { activate, deactivate, _internal: { quoteOf } };
+module.exports = { activate, deactivate, _internal: { quoteOf, minimalSpan } };

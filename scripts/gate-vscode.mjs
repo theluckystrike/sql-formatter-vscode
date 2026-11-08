@@ -121,7 +121,8 @@ for (const f of GOOD) {
 // hero screenshot on the walkthrough sample (already formatted and saved above)
 await step('screenshot hero', async () => {
   await open('walkthrough.sql');
-  await vs.key('Home', 'Home', 4, 36);
+  await vs.command('View: Close Primary Side Bar');
+  await vs.key('ArrowUp', 'ArrowUp', 4, 38);
   await sleep(500);
   return await shot('hero');
 });
@@ -131,6 +132,7 @@ for (const f of HOSTILE) {
   await step(`hostile ${f}`, async () => {
     await clearNotifications();
     await open(f);
+    await vs.wbEval(`window.__gap = { max: 0, last: performance.now(), on: true }; (function tick(){ const n = performance.now(); if (window.__gap.on) { window.__gap.max = Math.max(window.__gap.max, n - window.__gap.last); window.__gap.last = n; requestAnimationFrame(tick); } })(); 1`);
     const t0 = Date.now();
     await formatKey();
     const note = await vs.waitFor(async () => (await notifications()).find((n) => /Not formatted|statements formatted|SQL/.test(n) && /Not formatted/.test(n)), 40000, 150);
@@ -140,7 +142,7 @@ for (const f of HOSTILE) {
     if (f.includes('one-line')) {
       // a valid 1 MB single line formats; it must not hang
       const done = note ? false : await vs.waitFor(async () => (await activeDirty()) || null, 30000, 200);
-      if (!note) { const saved = await save(f); const exp = expected(f, originals[f]); must(saved === exp.out, '1 MB line: saved text differs'); R.files.push({ file: f, hostile: true, formatted: true, ms: Date.now() - t0, bytes: originals[f].length }); return { formatted: true, ms: Date.now() - t0 }; }
+      if (!note) { const saved = await save(f); const exp = expected(f, originals[f]); must(saved === exp.out, '1 MB line: saved text differs'); const gap = await vs.wbEval(`(() => { window.__gap.on = false; return Math.round(window.__gap.max); })()`); R.files.push({ file: f, hostile: true, formatted: true, ms: Date.now() - t0, maxFrameGapMs: gap, bytes: originals[f].length }); return { formatted: true, ms: Date.now() - t0, maxFrameGapMs: gap }; }
       return { refused: note, ms, done };
     }
     must(note, 'no message: ' + JSON.stringify(await notifications()));
@@ -239,6 +241,7 @@ await step('dialect picker: pick for one file, then back to auto', async () => {
   const mid = await dialectStatus();
   must(mid === 'MySQL', mid);
   await vs.command('SQL Formatter: Pick SQL Dialect for This File');
+  must(await vs.waitFor(async () => (await quickRows()).some((r) => /^Auto:/.test(r)), 5000, 100), 'picker did not open again');
   await vs.type('Auto'); await sleep(400); await vs.key('Enter', 'Enter'); await sleep(600);
   const after = await dialectStatus();
   must(after === 'PostgreSQL', after);
@@ -279,20 +282,25 @@ await step('format on save', async () => {
 
 await step('procedure screenshot', async () => {
   await open('tsql-nstrings.sql');
-  await vs.key('Home', 'Home', 4, 36);
+  await vs.key('ArrowUp', 'ArrowUp', 4, 38);
   await sleep(400);
   return await shot('procedure');
 });
 
 // ---- 5. network: TCP connections of this VS Code (other than the CDP port) ----
 await step('network: no connection from the extension host', async () => {
-  let out = '';
-  try { out = execFileSync('sh', ['-c', `for p in $(pgrep -f '${path.join(work, 'ud')}'); do lsof -nP -a -p $p -iTCP 2>/dev/null | tail -n +2; done`], { encoding: 'utf8', timeout: 20000 }); } catch (e) { out = String(e.stdout || ''); }
-  const lines = out.split('\n').filter(Boolean).filter((l) => !l.includes(`:${port}`));
-  let exthost = '';
-  try { exthost = execFileSync('sh', ['-c', `pgrep -f 'extensionHost.*${path.join(work, 'ud').replace(/[^a-zA-Z0-9/_-]/g, '.')}|${path.join(work, 'ud')}.*extensionHost' | head -3`], { encoding: 'utf8' }).trim(); } catch {}
-  R.connections = lines;
-  return { otherConnections: lines.length, sample: lines.slice(0, 4), exthostPids: exthost };
+  // the extension host pid from VS Code's own log, then its TCP sockets
+  let pid = '';
+  try { pid = execFileSync('sh', ['-c', `grep -rhoE "extension host with pid [0-9]+" '${path.join(work, 'ud', 'logs')}' | tail -1 | grep -oE "[0-9]+$"`], { encoding: 'utf8' }).trim(); } catch {}
+  must(pid, 'extension host pid not found in the logs');
+  let ext = '';
+  try { ext = execFileSync('sh', ['-c', `lsof -nP -a -p ${pid} -iTCP -iUDP 2>/dev/null | tail -n +2`], { encoding: 'utf8', timeout: 20000 }); } catch (e) { ext = String(e.stdout || ''); }
+  const extLines = ext.split('\n').filter(Boolean);
+  let all = '';
+  try { all = execFileSync('sh', ['-c', `for p in $(pgrep -f '${path.join(work, 'ud')}'); do lsof -nP -a -p $p -iTCP 2>/dev/null | tail -n +2; done`], { encoding: 'utf8', timeout: 20000 }); } catch (e) { all = String(e.stdout || ''); }
+  R.connections = { exthostPid: pid, exthost: extLines, otherVsCodeProcesses: all.split('\n').filter(Boolean).filter((l) => !l.includes(`:${port}`) && !l.includes(` ${pid} `)) };
+  must(extLines.length === 0, 'extension host sockets: ' + JSON.stringify(extLines));
+  return { exthostPid: pid, exthostSockets: 0, otherVsCodeSockets: R.connections.otherVsCodeProcesses.length };
 });
 
 // ---- 6. rating ask: the files above were session 1 (with refusals); a session 30 hours later formats one file -> ask ----

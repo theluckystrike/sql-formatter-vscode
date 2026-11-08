@@ -4,7 +4,8 @@ test/**
 scripts/**
 dist/**
 node_modules/**
-images/raw/**
+images/**
+!images/hero.png
 samples/**
 !samples/walkthrough.sql
 **/*.map

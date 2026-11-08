@@ -12,7 +12,9 @@ const strings = (text, d) => L.tokenize(text, L.rulesFor(d), { dollar: !L.MYSQL_
 // Rival review cases (links in README "Why this one")
 test('$$ bodies stay byte for byte, in PostgreSQL and in other dialects', () => {
   const body = '$$ begin  return a+1;   -- note\nend; $$';
-  for (const d of ['postgresql', 'plsql', 'sql', 'mysql', 'transactsql']) {
+  // MySQL has no dollar quotes ($$ is a DELIMITER there): only whitespace and keyword case may change, $$ is never split
+  try { const m = fmt(`create function f(a int) returns int as ${body} language plpgsql;`, { dialect: 'mysql' }); assert.ok(!m.includes('$ $') && m.includes('-- note')); } catch (e) { assert.ok(e instanceof E.FormatError); }
+  for (const d of ['postgresql', 'plsql', 'sql', 'transactsql', 'snowflake', 'bigquery']) {
     const out = fmt(`create function f(a int) returns int as ${body} language plpgsql;`, { dialect: d });
     assert.ok(out.includes(body), `${d}: ${out}`);
     assert.ok(!out.includes('$ $'));
